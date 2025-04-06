@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Styles spécifiques à l'application */
+@layer utilities {
+  /* Animation de fondu en entrée */
+  .animation-fade-in {
+    animation: fadeIn 0.8s ease-in-out;
+  }
+  
+  /* Animation de flottement */
+  .animate-float {
+    animation: float 10s ease-in-out infinite;
+  }
+  
+  /* Animation de scintillement */
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  
+  /* Mode de surlignage */
+  .selecting-text {
+    cursor: pointer;
+  }
+  
+  .selecting-text p:hover, 
+  .selecting-text span:hover {
+    @apply bg-blue-100 dark:bg-blue-900/30 rounded transition-colors;
+  }
+  
+  /* Scrollbar personnalisée */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-400/50 dark:bg-gray-600/50 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500/70 dark:bg-gray-500/70;
+  }
+}
+
+/* Définitions des animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-10px) translateX(10px);
+  }
+  50% {
+    transform: translateY(0) translateX(0);
+  }
+  75% {
+    transform: translateY(10px) translateX(-10px);
+  }
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.5));
+  }
+  to {
+    filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8));
+  }
+}
+
+/* Styles pour les versets de la Bible */
+.prose p {
+  @apply relative mb-4 leading-relaxed;
+}
+
+.verse-number {
+  @apply text-sm text-gray-500 dark:text-gray-400 mr-1 font-semibold;
+}
+
+/* Extension pour prose (contenu de la Bible) */
+.prose h1, .prose h2, .prose h3 {
+  @apply text-gray-900 dark:text-white mb-4 font-bold;
+}
+
+.prose h1 {
+  @apply text-2xl;
+}
+
+.prose h2 {
+  @apply text-xl;
+}
+
+.prose h3 {
+  @apply text-lg;
+}
+
+.prose p {
+  @apply text-gray-700 dark:text-gray-300;
+}
+
+/* Mode sombre */
+.dark .prose {
+  @apply text-gray-300;
+}
+
+/* Police pour les caractères hébreux et grecs */
+@font-face {
+  font-family: 'Noto Serif Hebrew';
+  src: url('https://fonts.googleapis.com/css2?family=Noto+Serif+Hebrew&display=swap');
+}
+
+@font-face {
+  font-family: 'Noto Serif';
+  src: url('https://fonts.googleapis.com/css2?family=Noto+Serif&display=swap');
+}
+
+/* Classe pour les textes hébreux */
+.hebrew-text {
+  font-family: 'Noto Serif Hebrew', serif;
+  direction: rtl;
+}
+
+/* Classe pour les textes grecs */
+.greek-text {
+  font-family: 'Noto Serif', serif;
+}
+
+/* Styles pour le lecteur audio */
+.audio-visualizer-bar {
+  @apply bg-blue-500 dark:bg-blue-400 rounded-full;
+  transition: height 100ms ease;
+}

@@ -18,7 +18,7 @@ const Home = () => {
         const bibles = await bibleApiService.getBibles();
         setFeaturedBibles(bibles.slice(0, 4)); // Prendre seulement 4 bibles pour la présentation
       } catch (err) {
-        setError("Impossible de charger les bibles. Veuillez réessayer plus tard.");
+        setError("Impossible de se connecter à l'API Bible. Veuillez vérifier votre connexion internet et votre clé API.");
         console.error(err);
       } finally {
         setLoading(false);
@@ -31,7 +31,7 @@ const Home = () => {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative py-20 overflow-hidden">
+      <section className="relative py-20 overflow-hidden w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center">
             {/* Texte */}
@@ -58,7 +58,7 @@ const Home = () => {
             </div>
             
             {/* Image/Illustration */}
-            <div className="lg:w-1/2 relative">
+            <div className="lg:w-1/2 relative w-full">
               <div className="relative overflow-hidden w-full h-96 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-600/10 dark:from-indigo-600/20 dark:to-purple-800/20 backdrop-blur-sm p-1">
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-6xl md:text-8xl font-serif opacity-30 dark:opacity-40 text-blue-700 dark:text-indigo-500">
@@ -77,7 +77,7 @@ const Home = () => {
       </section>
 
       {/* Section des fonctionnalités */}
-      <section className="py-16 relative">
+      <section className="py-16 relative w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
@@ -132,9 +132,9 @@ const Home = () => {
       </section>
 
       {/* Section des bibles populaires */}
-      <section className="py-16 relative">
+      <section className="py-16 relative w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
                 Bibles populaires
@@ -143,7 +143,7 @@ const Home = () => {
                 Commencez votre lecture avec ces versions populaires
               </p>
             </div>
-            <Link to="/explore">
+            <Link to="/explore" className="mt-4 md:mt-0">
               <Button variant="ghost">
                 Voir toutes les versions
               </Button>
@@ -191,7 +191,7 @@ const Home = () => {
       </section>
 
       {/* Call-to-Action */}
-      <section className="py-16 relative">
+      <section className="py-16 relative w-full">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card variant="glass" className="p-10 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900 dark:text-white">
@@ -200,13 +200,15 @@ const Home = () => {
             <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
               Découvrez de nouvelles perspectives et approfondissez votre compréhension des textes sacrés.
             </p>
-            <Link to="/explore">
-              <Button size="lg">
-                Commencer l'aventure
-              </Button>
-            </Link>
+            <div className="flex justify-center w-full">
+              <Link to="/explore" className="w-full md:w-auto">
+                <Button size="lg" className="w-full md:w-auto">
+                  Commencer l'aventure
+                </Button>
+              </Link>
+            </div>
           </Card>
-    </div>
+        </div>
       </section>
     </Layout>
   );

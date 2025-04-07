@@ -3,8 +3,15 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import Layout from '../Layout/Layout';
 import Button from '../UI/Button';
 import Card from '../UI/Card';
-import { Bible, Book, Chapter } from '../../types/bible-api.types';
+import { Bible, Book, Chapter, Verse } from '../../types/bible-api.types';
 import { bibleApiService } from '../../services/bible-api.service';
+
+interface Highlight {
+  id: string;
+  verseId: string;
+  color: string;
+  text: string;
+}
 
 const BibleDetailPage: React.FC = () => {
   const { bibleId } = useParams<{ bibleId: string }>();
@@ -16,17 +23,22 @@ const BibleDetailPage: React.FC = () => {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMessage, setShowMessage] = useState(false);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   
-  // Charger les détails de la Bible
+  // Charger les détails de la Bible et ses livres
   useEffect(() => {
-    const fetchBibleDetails = async () => {
-      if (!bibleId) return;
+    const fetchData = async () => {
+      if (!bibleId) {
+        setError("ID de Bible manquant");
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
-        setError(null);
         
-        // Récupérer les détails de la Bible
+        // Charger les détails de la Bible
         const bibleData = await bibleApiService.getBible(bibleId);
         setBible(bibleData);
         
@@ -34,14 +46,14 @@ const BibleDetailPage: React.FC = () => {
         const booksData = await bibleApiService.getBooks(bibleId);
         setBooks(booksData);
       } catch (err) {
-        setError('Erreur lors du chargement des détails. Veuillez réessayer.');
+        setError("Impossible de charger les données. Veuillez réessayer plus tard.");
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchBibleDetails();
+
+    fetchData();
   }, [bibleId]);
   
   // Charger les chapitres pour un livre sélectionné
@@ -94,6 +106,27 @@ const BibleDetailPage: React.FC = () => {
     groups[group].push(book);
     return groups;
   }, {});
+
+  const handleAudioClick = () => {
+    setShowMessage(true);
+    const timer = setTimeout(() => {
+      setShowMessage(false);
+    }, 4000);
+    return () => clearTimeout(timer);
+  };
+
+  // Charger les surlignages depuis le localStorage
+  useEffect(() => {
+    const savedHighlights = localStorage.getItem('bibleHighlights');
+    if (savedHighlights) {
+      setHighlights(JSON.parse(savedHighlights));
+    }
+  }, []);
+
+  // Sauvegarder les surlignages dans le localStorage
+  useEffect(() => {
+    localStorage.setItem('bibleHighlights', JSON.stringify(highlights));
+  }, [highlights]);
 
   return (
     <Layout>
@@ -148,18 +181,15 @@ const BibleDetailPage: React.FC = () => {
                 
                 <div className="flex flex-wrap gap-3">
                   {bible.audioBibles && bible.audioBibles.length > 0 ? (
-                    <Link to={`/bible/${bible.id}/audio`}>
-                      <Button
-                        variant="secondary"
-                        icon={
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-5 w-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.465a5 5 0 001.06-7.072m-2.11 9.9a9 9 0 010-12.728" />
-                          </svg>
-                        }
-                      >
-                        Écouter en audio
-                      </Button>
-                    </Link>
+                    <button
+                      onClick={handleAudioClick}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                      </svg>
+                      Écouter en audio
+                    </button>
                   ) : null}
                   
                   <Link to={`/search?bible=${bible.id}`}>
@@ -252,6 +282,11 @@ const BibleDetailPage: React.FC = () => {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+              {showMessage && (
+                <div className="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg z-50">
+                  Fonctionnalité audio à venir
                 </div>
               )}
             </>

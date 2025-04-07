@@ -5,6 +5,7 @@ import Card from '../UI/Card';
 import Button from '../UI/Button';
 import { Bible } from '../../types/bible-api.types';
 import { bibleApiService } from '../../services/bible-api.service';
+import SearchBar from '../UI/SearchBar';
 
 const ExplorePage: React.FC = () => {
   const [bibles, setBibles] = useState<Bible[]>([]);
@@ -14,6 +15,8 @@ const ExplorePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('');
   const [languages, setLanguages] = useState<{ id: string; name: string }[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoritesDebug, setFavoritesDebug] = useState<string>('');
 
   useEffect(() => {
     const fetchBibles = async () => {
@@ -46,6 +49,64 @@ const ExplorePage: React.FC = () => {
 
     fetchBibles();
   }, []);
+
+  // Charger les favoris depuis le localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('bibleFavorites');
+    setFavoritesDebug(`Récupéré du localStorage: ${savedFavorites}`);
+    
+    if (savedFavorites) {
+      try {
+        const parsedFavorites = JSON.parse(savedFavorites);
+        if (Array.isArray(parsedFavorites)) {
+          setFavorites(parsedFavorites);
+          setFavoritesDebug(prev => `${prev}\nParsé avec succès: ${JSON.stringify(parsedFavorites)}`);
+        } else {
+          setFavoritesDebug(prev => `${prev}\nFormat incorrect, pas un tableau`);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des favoris:", error);
+        setFavoritesDebug(prev => `${prev}\nErreur de parsing: ${error}`);
+        localStorage.removeItem('bibleFavorites');
+      }
+    } else {
+      setFavoritesDebug(prev => `${prev}\nAucun favori trouvé dans localStorage`);
+    }
+  }, []);
+
+  // Sauvegarder les favoris dans le localStorage
+  useEffect(() => {
+    // Ne pas sauvegarder lors du premier rendu (quand favorites est vide)
+    if (favorites.length === 0 && favoritesDebug === '') return;
+    
+    try {
+      const favoritesString = JSON.stringify(favorites);
+      localStorage.setItem('bibleFavorites', favoritesString);
+      setFavoritesDebug(prev => `${prev}\nSauvegardé dans localStorage: ${favoritesString}`);
+      console.log("Favoris sauvegardés:", favorites);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde des favoris:", error);
+      setFavoritesDebug(prev => `${prev}\nErreur de sauvegarde: ${error}`);
+    }
+  }, [favorites]);
+
+  const toggleFavorite = (bibleId: string) => {
+    setFavorites(prev => {
+      const newFavorites = prev.includes(bibleId)
+        ? prev.filter(id => id !== bibleId)
+        : [...prev, bibleId];
+      
+      // Force la sauvegarde immédiate dans localStorage
+      try {
+        localStorage.setItem('bibleFavorites', JSON.stringify(newFavorites));
+        setFavoritesDebug(prev => `${prev}\nToggle et sauvegarde immédiate: ${JSON.stringify(newFavorites)}`);
+      } catch (error) {
+        console.error("Erreur lors de la sauvegarde immédiate des favoris:", error);
+      }
+      
+      return newFavorites;
+    });
+  };
 
   // Filtrer les bibles en fonction de la recherche et de la langue sélectionnée
   useEffect(() => {
@@ -82,6 +143,23 @@ const ExplorePage: React.FC = () => {
     setSelectedLanguage('');
   };
 
+  // Trier les bibles : favoris d'abord, puis les autres
+  const sortedBibles = [...filteredBibles].sort((a, b) => {
+    const aIsFavorite = favorites.includes(a.id);
+    const bIsFavorite = favorites.includes(b.id);
+    if (aIsFavorite && !bIsFavorite) return -1;
+    if (!aIsFavorite && bIsFavorite) return 1;
+    return 0;
+  });
+
+  // Filtrer les bibles selon la recherche - exclure les favoris qui sont déjà affichés séparément
+  const filteredBiblesSorted = sortedBibles
+    .filter(bible => 
+      bible.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      bible.language.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .filter(bible => !favorites.includes(bible.id) || (searchQuery !== '' || selectedLanguage !== ''));
+
   return (
     <Layout>
       <div className="py-8">
@@ -95,8 +173,57 @@ const ExplorePage: React.FC = () => {
             </p>
           </div>
 
+          {/* Section Favoris */}
+          {favorites.length > 0 && (
+            <div className="mb-12">
+              <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+                Mes Bibles favorites
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredBibles
+                  .filter(bible => favorites.includes(bible.id))
+                  .map(bible => (
+                    <Card key={bible.id} className="relative">
+                      <button
+                        onClick={() => toggleFavorite(bible.id)}
+                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-yellow-500 fill-current"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                          />
+                        </svg>
+                      </button>
+                      <Link to={`/bible/${bible.id}`}>
+                        <div className="p-6">
+                          <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                            {bible.name}
+                          </h3>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
+                            {bible.language.name}
+                          </p>
+                          <p className="text-gray-700 dark:text-gray-300 line-clamp-3">
+                            {bible.description || "Version disponible pour la lecture et l'étude."}
+                          </p>
+                        </div>
+                      </Link>
+                    </Card>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Filtres de recherche */}
-          <div className="mb-10 p-6 rounded-xl bg-white dark:bg-gray-800 shadow-md">
+          <div className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="relative">
                 <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -155,54 +282,53 @@ const ExplorePage: React.FC = () => {
           ) : (
             <div>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                {filteredBibles.length} {filteredBibles.length === 1 ? 'résultat' : 'résultats'} trouvés
+                {filteredBiblesSorted.length} {filteredBiblesSorted.length === 1 ? 'résultat' : 'résultats'} trouvés
               </p>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBibles.map(bible => (
-                  <Link to={`/bible/${bible.id}`} key={bible.id}>
-                    <Card hoverable className="h-full p-6 flex flex-col">
-                      <div className="flex items-center mb-4">
-                        <span className="text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 py-1 px-2 rounded-full">
+                {filteredBiblesSorted.map(bible => (
+                  <Card key={bible.id} className="relative">
+                    <button
+                      onClick={() => toggleFavorite(bible.id)}
+                      className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className={`h-6 w-6 ${
+                          favorites.includes(bible.id)
+                            ? 'text-yellow-500 fill-current'
+                            : 'text-gray-400'
+                        }`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                        />
+                      </svg>
+                    </button>
+                    <Link to={`/bible/${bible.id}`}>
+                      <div className="p-6">
+                        <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
+                          {bible.name}
+                        </h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
                           {bible.language.name}
-                        </span>
-                        {bible.audioBibles && bible.audioBibles.length > 0 && (
-                          <span className="ml-2 text-sm bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 py-1 px-2 rounded-full flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-3 w-3 mr-1">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.465a5 5 0 001.06-7.072m-2.11 9.9a9 9 0 010-12.728" />
-                            </svg>
-                            Audio
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">
-                        {bible.name}
-                      </h3>
-                      {bible.nameLocal !== bible.name && (
-                        <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-                          {bible.nameLocal}
                         </p>
-                      )}
-                      <p className="text-gray-700 dark:text-gray-300 text-sm flex-grow line-clamp-3">
-                        {bible.description || "Pas de description disponible."}
-                      </p>
-                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {bible.abbreviation}
-                        </span>
-                        <span className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400">
-                          Explorer
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="ml-1 h-4 w-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-                        </span>
+                        <p className="text-gray-700 dark:text-gray-300 line-clamp-3">
+                          {bible.description || "Version disponible pour la lecture et l'étude."}
+                        </p>
                       </div>
-                    </Card>
-                  </Link>
+                    </Link>
+                  </Card>
                 ))}
               </div>
 
-              {filteredBibles.length === 0 && (
+              {filteredBiblesSorted.length === 0 && (
                 <div className="text-center py-12">
                   <div className="text-5xl mb-4">📚</div>
                   <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white">

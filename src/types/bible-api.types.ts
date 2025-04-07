@@ -35,6 +35,10 @@ export interface AudioBible {
   name: string;
   nameLocal: string;
   dblId: string;
+  language: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface Book {
@@ -97,8 +101,17 @@ export interface AudioData {
   url: string;
   mimeType: string;
   _fallback?: boolean;
+  format: string;
+  duration: number;
 }
 
 export interface ApiResponse<T> {
   data: T;
+  meta: {
+    fums: string;
+    fumsId: string;
+    fumsJsInclude: string;
+    fumsJs: string;
+    fumsNoScript: string;
+  };
 } 

@@ -1,16 +1,37 @@
 import axios from 'axios';
 import { ApiResponse, Bible, Book, Chapter, SearchResult, Verse, AudioData, AudioBible } from '../types/bible-api.types';
 
-// URL de base de notre backend proxy
-const BASE_URL = 'http://localhost:5000/api';
+// URL de base de l'API Bible publique
+const BASE_URL = 'https://api.scripture.api.bible/v1';
 
-// Créer une instance axios avec configuration par défaut
+// Clé API (à remplacer par votre clé API)
+const API_KEY = '20404f407724ee8a764e31a9146f4dfd';
+
+// Configuration d'axios avec gestion des erreurs et retry
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'api-key': API_KEY,
   },
+  timeout: 10000, // 10 secondes de timeout
 });
+
+// Intercepteur pour gérer les erreurs
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+      console.error('Erreur de connexion à l\'API Bible. Veuillez vérifier votre connexion internet.');
+      throw new Error('Impossible de se connecter à l\'API Bible. Veuillez vérifier votre connexion internet.');
+    }
+    if (error.response?.status === 401) {
+      console.error('Erreur d\'authentification. La clé API est invalide ou a expiré.');
+      throw new Error('La clé API est invalide ou a expiré. Veuillez contacter l\'administrateur.');
+    }
+    throw error;
+  }
+);
 
 // Implémentation d'un cache simple en mémoire
 interface CacheItem<T> {
@@ -51,12 +72,17 @@ export const clearCache = (): void => {
   }
 };
 
-// Service pour interagir avec l'API Bible via notre backend
+// Service pour interagir avec l'API Bible
 export const bibleApiService = {
   // Récupérer la liste de toutes les bibles disponibles
   getBibles: async (): Promise<Bible[]> => {
-    const response = await apiClient.get<ApiResponse<Bible[]>>('/bibles');
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Bible[]>>('/bibles');
+      return response.data.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des bibles:', error);
+      throw new Error('Impossible de charger les bibles. Veuillez vérifier votre connexion internet.');
+    }
   },
 
   // Récupérer uniquement les bibles qui ont des versions audio
@@ -67,32 +93,57 @@ export const bibleApiService = {
 
   // Récupérer une bible spécifique par ID
   getBible: async (bibleId: string): Promise<Bible> => {
-    const response = await apiClient.get<ApiResponse<Bible>>(`/bibles/${bibleId}`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Bible>>(`/bibles/${bibleId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération de la bible ${bibleId}:`, error);
+      throw new Error(`Impossible de charger la bible ${bibleId}. Veuillez réessayer.`);
+    }
   },
 
   // Récupérer tous les livres d'une bible
   getBooks: async (bibleId: string): Promise<Book[]> => {
-    const response = await apiClient.get<ApiResponse<Book[]>>(`/bibles/${bibleId}/books`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Book[]>>(`/bibles/${bibleId}/books`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération des livres pour ${bibleId}:`, error);
+      throw new Error('Impossible de charger les livres. Veuillez réessayer.');
+    }
   },
 
   // Récupérer un livre spécifique
   getBook: async (bibleId: string, bookId: string): Promise<Book> => {
-    const response = await apiClient.get<ApiResponse<Book>>(`/bibles/${bibleId}/books/${bookId}`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Book>>(`/bibles/${bibleId}/books/${bookId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du livre ${bookId}:`, error);
+      throw new Error('Impossible de charger le livre. Veuillez réessayer.');
+    }
   },
 
   // Récupérer les chapitres d'un livre
   getChapters: async (bibleId: string, bookId: string): Promise<Chapter[]> => {
-    const response = await apiClient.get<ApiResponse<Chapter[]>>(`/bibles/${bibleId}/books/${bookId}/chapters`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Chapter[]>>(`/bibles/${bibleId}/books/${bookId}/chapters`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération des chapitres pour ${bookId}:`, error);
+      throw new Error('Impossible de charger les chapitres. Veuillez réessayer.');
+    }
   },
 
   // Récupérer un chapitre spécifique
   getChapter: async (bibleId: string, chapterId: string): Promise<Chapter> => {
-    const response = await apiClient.get<ApiResponse<Chapter>>(`/bibles/${bibleId}/chapters/${chapterId}`);
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Chapter>>(`/bibles/${bibleId}/chapters/${chapterId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du chapitre ${chapterId}:`, error);
+      throw new Error('Impossible de charger le chapitre. Veuillez réessayer.');
+    }
   },
 
   // Récupérer le contenu d'un verset spécifique
@@ -109,11 +160,16 @@ export const bibleApiService = {
 
   // Rechercher dans la bible
   search: async (bibleId: string, query: string, limit = 20, offset = 0): Promise<SearchResult> => {
-    const response = await apiClient.get<ApiResponse<SearchResult>>(
-      `/bibles/${bibleId}/search`,
-      { params: { query, limit, offset } }
-    );
-    return response.data.data;
+    try {
+      const response = await apiClient.get<ApiResponse<SearchResult>>(
+        `/bibles/${bibleId}/search`,
+        { params: { query, limit, offset } }
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error(`Erreur lors de la recherche pour ${bibleId}:`, error);
+      throw new Error('Impossible d\'effectuer la recherche. Veuillez réessayer.');
+    }
   },
 
   // Récupérer les audio bibles disponibles pour une bible spécifique
@@ -192,27 +248,11 @@ export const bibleApiService = {
         console.log(`Audio URL trouvée: ${response.data.data.url}`);
         return response.data.data;
       } else {
-        console.error('Réponse valide mais sans URL audio', response.data);
         throw new Error('Aucune URL audio disponible dans la réponse');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erreur lors de la récupération de l\'audio:', error);
-      console.error('Détails de l\'erreur:', error.response?.data || error.message);
-      
-      // Si le code d'erreur est 404, cela signifie que l'audio n'existe pas pour ce chapitre
-      if (error.response && error.response.status === 404) {
-        console.log(`Audio non trouvé (404) pour ce chapitre`);
-      }
-      
-      // Retourner une URL de secours pour éviter les erreurs
-      return { 
-        id: `fallback-${bibleId}-${chapterId}`,
-        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-        mimeType: 'audio/mpeg',
-        _fallback: true
-      };
+      throw error;
     }
   },
-
-  clearCache
-}; 
+};

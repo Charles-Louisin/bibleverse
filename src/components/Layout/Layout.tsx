@@ -32,8 +32,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Contenu principal */}
       <Navbar />
       
-      <main className="flex-grow mt-16 container mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-        {children}
+      <main className="flex-grow mt-16 w-full px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
       
       <footer className="py-6 px-4 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400 relative z-10">

@@ -146,7 +146,7 @@ const ChapterPage: React.FC = () => {
     setFontSize(prev => Math.max(prev - 2, 14));
   };
   
-  // Gérer la sélection de texte - maintenant toujours actif
+  // Gérer la sélection de texte - maintenant adapté pour mobile
   const handleTextSelection = () => {
     const selection = window.getSelection();
     if (selection && !selection.isCollapsed) {
@@ -157,6 +157,14 @@ const ChapterPage: React.FC = () => {
         setShowColorPicker(true);
       }
     }
+  };
+  
+  // Ajouter des événements pour la sélection tactile
+  const handleTouchEnd = () => {
+    // Attendre un court instant pour que la sélection soit complète
+    setTimeout(() => {
+      handleTextSelection();
+    }, 100);
   };
   
   // Appliquer le surlignage au texte sélectionné
@@ -240,43 +248,54 @@ const ChapterPage: React.FC = () => {
     return brightness > 128 ? '#000000' : '#FFFFFF';
   };
 
-  // Sécuriser le rendu HTML du contenu de la Bible
-  // Note: normalement il faudrait utiliser une bibliothèque de purification comme DOMPurify
+  // Fonction pour le rendu du contenu biblique avec les surlignages
   const renderBibleContent = () => {
+    // Calculer la couleur de texte contrastée en fonction d'une couleur de fond
+    function getContrastTextColor(hexColor: string) {
+      // Convertir la couleur hexadécimale en RGB
+      const r = parseInt(hexColor.slice(1, 3), 16);
+      const g = parseInt(hexColor.slice(3, 5), 16);
+      const b = parseInt(hexColor.slice(5, 7), 16);
+      
+      // Calculer la luminosité (une formule simplifiée)
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      
+      // Retourner blanc ou noir selon la luminosité
+      return brightness > 128 ? '#000000' : '#FFFFFF';
+    }
+
     if (!chapter?.content) return null;
     
-    // Appliquer les surlignages
+    // Trier les surlignages par longueur (décroissante) pour éviter les problèmes de remplacement
+    const sortedHighlights = [...highlights].sort((a, b) => 
+      b.text.length - a.text.length
+    );
+    
     let contentWithHighlights = chapter.content;
     
-    // Fonction pour échapper les caractères spéciaux en RegExp
-    const escapeRegExp = (string: string) => {
-      return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    };
-    
-    // Appliquer chaque surlignage au contenu
-    // Trier les surlignages du plus long au plus court pour éviter les conflits
-    const sortedHighlights = [...highlights].sort((a, b) => b.text.length - a.text.length);
-    
+    // Appliquer les surlignages au contenu
     sortedHighlights.forEach(highlight => {
-      const escapedText = escapeRegExp(highlight.text);
-      const regex = new RegExp(`(${escapedText})`, 'g'); // Suppression du flag 'i' pour correspondance exacte
+      // Échapper les caractères spéciaux pour l'expression régulière
+      const escapedText = highlight.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       
-      // Améliorer la lisibilité en mode sombre avec un texte contrasté pour chaque couleur
-      const textColor = getContrastTextColor(highlight.color);
+      // Créer un modèle d'expression régulière pour remplacer le texte exact
+      const regex = new RegExp(`(${escapedText})`, 'gi');
       
+      // Remplacer le texte par une version surlignée
       contentWithHighlights = contentWithHighlights.replace(
-        regex, 
-        `<span class="highlighted" style="background-color: ${highlight.color}; color: ${textColor}; padding: 2px 4px; border-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); font-weight: 500;">${'$1'}</span>`
+        regex,
+        `<span class="highlighted" style="background-color: ${highlight.color}; color: ${getContrastTextColor(highlight.color)}; padding: 0 4px; border-radius: 3px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-weight: 500;">${highlight.text}</span>`
       );
     });
     
-    // Créer un conteneur pour le contenu
     return (
       <div 
         ref={contentRef}
         className={`prose prose-lg max-w-none dark:prose-invert transition-all duration-300 ${showColorPicker ? 'selecting-text' : ''}`}
         style={{ fontSize: `${fontSize}px` }}
         onMouseUp={handleTextSelection}
+        onTouchEnd={handleTouchEnd}
+        onTouchStart={() => {}}
         dangerouslySetInnerHTML={{ __html: contentWithHighlights }}
       />
     );
